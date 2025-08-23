@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: simui-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: simui
+      POSTGRES_USER: simui_user
+      POSTGRES_PASSWORD: simui_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

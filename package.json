@@ -1,0 +1,19 @@
+{
+  "name": "reonic-simulation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "pnpm -r -F simapi -F simui dev",
+    "build": "pnpm -F simulation build && pnpm -F simapi build && pnpm -F simapi generate:graphql && pnpm -F simui generate && pnpm -F simui build",
+    "start": "pnpm -r -F simapi -F simui start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.14.0",
+  "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.7",
+    "@graphql-codegen/client-preset": "^4.8.3"
+  }
+}

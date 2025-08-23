@@ -1,0 +1,39 @@
+type Query {
+  hello: String!
+  simulations: [SimulationRun!]!
+  simulation(id: String!): SimulationRun
+}
+
+type Mutation {
+  runSimulation(input: SimulationInput!): SimulationRun!
+}
+
+input ChargerConfigInput {
+  id: String!
+  count: Int!
+  power: Int!
+}
+
+input SimulationInput {
+  chargers: [ChargerConfigInput!]!
+  arrivalProbabilities: [Float!]!
+  energyConsumption: Float!
+  name: String
+}
+
+type SimulationRun {
+  id: String!
+  createdAt: String!
+  updatedAt: String!
+  status: SimulationStatus!
+  results: String
+  totalConsumedEnergy: Float
+  inputs: String!
+  name: String
+}
+
+enum SimulationStatus {
+  COMPLETED
+  RUNNING
+  FAILED
+}

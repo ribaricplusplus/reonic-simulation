@@ -1,0 +1,40 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+generator pothos {
+  provider = "prisma-pothos-types"
+  clientOutput = "./prisma"
+  output = "../src/generated/pothos-types.ts"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SimulationStatus {
+  COMPLETED
+  RUNNING
+  FAILED
+}
+
+model SimulationRun {
+  id                   String           @id @default(cuid())
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  status               SimulationStatus @default(RUNNING)
+  results              Json?            // Serialized JSON data about simulation results
+  totalConsumedEnergy  Float?           // Consumed energy by chargers in kWh
+  inputs               Json             // Serialized data from simulation page inputs
+  name                 String?          // Optional name for the simulation run
+
+  @@map("simulation_runs")
+}

@@ -1,0 +1,26 @@
+{
+  "name": "simulation",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.cjs"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.cjs",
+    "index.d.ts",
+    "build/"
+  ],
+  "scripts": {
+    "install": "cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && cmake --build build",
+    "build": "cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && cmake --build build",
+    "clean": "rm -rf build"
+  },
+  "author": "",
+  "license": "ISC"
+}
