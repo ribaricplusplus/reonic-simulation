@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: simui_user
       POSTGRES_PASSWORD: simui_password
     ports:
-      - "5432:5432"
+      - "5550:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
