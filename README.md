@@ -1,8 +1,79 @@
 # EV Simulation
 
-## Simulation
+![Screenshot](./images/readme.png)
 
-## Correlation between concurrency factor and number of chargers
+A live version of this project is hosted at [https://ev.ribarich.me](https://ev.ribarich.me).
+
+Instructions to run the project locally are below in "Building the project".
+
+This is a monorepo with 3 packages: `simulation`, `simui`, and `simapi`.
+
+The specification document says that the `simulation` logic doesn't need to be connected with the frontend and backend, but I connected it because it sounded like fun :).
+
+The core simulation logic is written in the `simulation` package, which is a native Node.js addon written in C++, which makes it very easy to use from a Node.js Express server:
+
+``` javascript
+simulate({
+    arrivalDistribution,
+    chargingDemandProbabilities,
+    chargers: chargers,
+    evConsumption: 18
+}, (results) => {
+    // Do something with results
+}
+```
+
+A complete example showing the usage and that answers questions from Task 1 is in [example.js](./packages/simulation/example.js).
+
+The `simulation` package is multi threaded, and it uses `libuv` (Node.js event loop implementation) threadpool. Multithreading is not necessary for this simulation, but it demonstrates nicely how multithreading could be handled for a more complex simulation.
+
+The core simulation logic is very simple. This is the code that actually executes the simulation:
+
+``` c++
+void Worker::run() {
+  for (int tick = 0; tick < Worker::totalTicks; tick++) {
+    for (auto &charger : chargersState) {
+      if (!charger.occupied) {
+        bool evArrived = rand.evArrives(tick);
+
+        if (evArrived) {
+          workerState[tick].numOfEvents++;
+        }
+
+        if ((charger.occupied = evArrived)) {
+          demand_t demand = rand.demand();
+          charger.demandKwh = demandToKwh(demand);
+        }
+      }
+
+      // Consume energy if charger is occupied and there is demand
+      if (charger.occupied && charger.demandKwh > 0.0) {
+        double energyGenerated = charger.powerKw * (TICK_DURATION / 60.0);
+        charger.demandKwh -= energyGenerated;
+
+        workerState[tick].totalEnergyKwh += energyGenerated;
+        workerState[tick].totalPowerKw += charger.powerKw;
+      }
+
+      if (charger.demandKwh <= 0.0) {
+        // Car leaves.
+        charger.occupied = false;
+        charger.demandKwh = 0.0;
+      }
+    }
+  }
+}
+```
+
+The frontend is developed with Next.js, Apollo Client, Tailwind, TypeScript and Shadcn. It is located in the package `simui`.
+
+The backend is developed with Apollo Server, Express, TypeScript, Prisma, and Pothos. It is located in the package `simapi`.
+
+The Prisma schema (located in `simapi` package) is the single source of truth for types. To ensure type safety and consistency across Prisma, backend GraphQL and frontend GraphQL, I use Pothos to generate the GraphQL schema and GraphQL Code Generation to create frontend TypeScript from that schema. Although of course for a project for this size, just manually writing types multiple times would've worked fine.
+
+## Answers
+
+### Correlation between concurrency factor and number of chargers
 
 Running the simulation for between 1 and 30 chargers yields the following results:
 
@@ -38,3 +109,51 @@ Running the simulation for between 1 and 30 chargers yields the following result
 | 28       | 308                        | 264.00                | 0.8571             |
 | 29       | 319                        | 242.00                | 0.7586             |
 | 30       | 330                        | 220.00                | 0.6667             |
+
+### Seeding probabilities
+
+The seed for probabilities is hardcoded in [worker.hpp](/packages/simulation/include/worker.hpp). The simulation code could be extended so that a seed number could be provided through the UI or parameter. This ensures random but deterministic runs of the simulation, depending on the seed.
+
+## Building the project
+
+I tested this project on Linux.
+
+Requirements:
+- cmake version >= 3.31
+- A modern C++ compiler (tested with GCC)
+- Node.js (tested with nvm and Node v22.18.0)
+- pnpm
+- docker
+
+Clone the repository.
+
+``` sh
+git clone git@github.com:ribaricplusplus/reonic-simulation.git
+cd reonic-simulation
+```
+
+Install dependencies for all packages.
+
+``` sh
+pnpm install
+```
+
+Run PostgreSQL.
+
+``` sh
+docker compose up -d
+```
+
+Build the project.
+
+``` sh
+pnpm build
+```
+
+Start backend and frontend
+
+``` sh
+pnpm start
+```
+
+For development you can run `pnpm dev` instead of `pnpm start`.
