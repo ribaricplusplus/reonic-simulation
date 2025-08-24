@@ -10,13 +10,22 @@ let chargingDemandProbabilities = new Map([
     [50, 11.76], [100, 10.78], [200, 4.90], [300, 2.94]
 ]);
 
-simulate({
-    arrivalDistribution,
-    chargingDemandProbabilities,
-    chargers: [11],
-    evConsumption: 18
-}, (results) => {
-    console.log(results);
-    const nonZeroMaxPowerEntries = results.results.filter(day => day.maxPowerKw > 0).length;
-    console.log(`Number of days with non-zero maxPowerKw: ${nonZeroMaxPowerEntries}`);
-});
+console.log("Chargers | Theoretical Max Power (kW) | Actual Max Power (kW) | Concurrency Factor");
+console.log("---------|---------------------------|----------------------|-------------------");
+
+for (let numChargers = 1; numChargers <= 30; numChargers++) {
+    const chargers = new Array(numChargers).fill(11);
+    const theoreticalMaxPower = numChargers * 11;
+    
+    simulate({
+        arrivalDistribution,
+        chargingDemandProbabilities,
+        chargers: chargers,
+        evConsumption: 18
+    }, (results) => {
+        const actualMaxPower = results.totalMaxPowerKw;
+        const concurrencyFactor = actualMaxPower / theoreticalMaxPower;
+        
+        console.log(`${numChargers.toString().padStart(8)} | ${theoreticalMaxPower.toString().padStart(25)} | ${actualMaxPower.toFixed(2).padStart(20)} | ${concurrencyFactor.toFixed(4).padStart(17)}`);
+    });
+}

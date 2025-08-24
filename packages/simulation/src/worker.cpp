@@ -75,12 +75,6 @@ double Worker::demandToKwh(demand_t demand) {
 void Worker::run() {
   for (int tick = 0; tick < Worker::totalTicks; tick++) {
     for (auto &charger : chargersState) {
-      if (charger.demandKwh <= 0.0) {
-        // Car leaves.
-        charger.occupied = false;
-        charger.demandKwh = 0.0;
-      }
-
       if (!charger.occupied) {
         bool evArrived = rand.evArrives(tick);
 
@@ -101,6 +95,12 @@ void Worker::run() {
 
         workerState[tick].totalEnergyKwh += energyGenerated;
         workerState[tick].totalPowerKw += charger.powerKw;
+      }
+
+      if (charger.demandKwh <= 0.0) {
+        // Car leaves.
+        charger.occupied = false;
+        charger.demandKwh = 0.0;
       }
     }
   }
