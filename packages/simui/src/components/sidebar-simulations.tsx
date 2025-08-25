@@ -9,7 +9,7 @@ export default function SidebarSimulations() {
     const { data } = useSuspenseQuery<Query>(GET_SIMULATIONS);
 
     return (
-        <div className="flex flex-col space-y-2 h-screen overflow-auto">
+        <div style={{ scrollbarWidth: 'none' }} className="flex flex-col space-y-2 h-screen overflow-auto">
             {data?.allSimulationRuns?.map((simulation) => (
                 <Link key={simulation.id} href={`/simulations/${simulation.id}`}>
                     <Card className="cursor-pointer hover:bg-gray-100">
