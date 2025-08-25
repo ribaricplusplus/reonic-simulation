@@ -90,11 +90,13 @@ void Worker::run() {
 
       // Consume energy if charger is occupied and there is demand
       if (charger.occupied && charger.demandKwh > 0.0) {
-        double energyGenerated = charger.powerKw * (TICK_DURATION / 60.0);
+        double time = (TICK_DURATION / 60.0);
+        double powerKw = std::min(charger.demandKwh / time, charger.powerKw);
+        double energyGenerated = powerKw * time;
         charger.demandKwh -= energyGenerated;
 
         workerState[tick].totalEnergyKwh += energyGenerated;
-        workerState[tick].totalPowerKw += charger.powerKw;
+        workerState[tick].totalPowerKw += powerKw;
       }
 
       if (charger.demandKwh <= 0.0) {
