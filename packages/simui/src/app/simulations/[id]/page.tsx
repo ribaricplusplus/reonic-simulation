@@ -25,24 +25,30 @@ export default function SimulationPage({ params }: SimulationPageProps) {
     )
 
     return (
-        <div className="p-6 max-w-4xl mx-auto">
+        <div className="p-3 sm:p-4 md:p-6 max-w-4xl mx-auto min-h-screen">
             {simulationLoading && !isNewSimulation ? (
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-gray-500">Loading simulation data...</div>
+                <div className="flex items-center justify-center h-64 px-4">
+                    <div className="text-gray-500 text-center text-sm sm:text-base">
+                        Loading simulation data...
+                    </div>
                 </div>
             ) : simulationError && !isNewSimulation ? (
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-red-500">
+                <div className="flex items-center justify-center h-64 px-4">
+                    <div className="text-red-500 text-center text-sm sm:text-base max-w-md">
                         Error loading simulation: {simulationError.message}
                     </div>
                 </div>
             ) : isNewSimulation ? (
-                <NewSimulationView />
+                <div className="w-full">
+                    <NewSimulationView />
+                </div>
             ) : simulationData ? (
-                <ExistingSimulationView 
-                    simulation={simulationData?.simulationRunById}
-                    simulationId={resolvedParams.id} 
-                />
+                <div className="w-full">
+                    <ExistingSimulationView 
+                        simulation={simulationData?.simulationRunById}
+                        simulationId={resolvedParams.id} 
+                    />
+                </div>
             ) : null}
         </div>
     )
