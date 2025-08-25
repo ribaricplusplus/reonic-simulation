@@ -24,12 +24,14 @@ export default function NewSimulationView() {
     const [energyConsumption, setEnergyConsumption] = useState<number>(18)
     const [simulationName, setSimulationName] = useState<string>('')
     const [isRunning, setIsRunning] = useState<boolean>(false)
+    const [error, setError] = useState<string | null>(null)
 
     const [runSimulation] = useMutation<Mutation>(RUN_SIMULATION, {
         refetchQueries: [{ query: GET_SIMULATIONS }],
         onCompleted: (data) => {
             console.log(data)
             setIsRunning(false);
+            setError(null);
             if (data.runSimulation?.id) {
                 router.push(`/simulations/${data.runSimulation.id}`)
             }
@@ -37,6 +39,7 @@ export default function NewSimulationView() {
         onError: (error) => {
             console.error('Error running simulation:', error);
             setIsRunning(false);
+            setError(error.message || 'An unexpected error occurred while running the simulation');
         }
     })
 
@@ -70,6 +73,7 @@ export default function NewSimulationView() {
 
     const handleRunSimulation = async () => {
         setIsRunning(true);
+        setError(null);
 
         try {
             await runSimulation({
@@ -85,12 +89,33 @@ export default function NewSimulationView() {
         } catch (error) {
             console.error('Failed to run simulation:', error);
             setIsRunning(false);
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred while running the simulation');
         }
     };
 
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold">Create New Simulation</h1>
+
+            {error && (
+                <Card className="border-red-200 bg-red-50">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-2 text-red-800">
+                            <div className="h-4 w-4 rounded-full bg-red-500"></div>
+                            <p className="text-sm font-medium">Error running simulation</p>
+                        </div>
+                        <p className="text-sm text-red-700 mt-2">{error}</p>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3 text-red-700 border-red-300 hover:bg-red-100"
+                            onClick={() => setError(null)}
+                        >
+                            Dismiss
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Simulation Name */}
             <Card>

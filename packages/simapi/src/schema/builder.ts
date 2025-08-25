@@ -4,6 +4,7 @@ import type PrismaTypes from '../generated/pothos-types.js';
 import { Prisma } from '../generated/prisma/client.js'
 import { prisma } from '../prisma.js';
 import { executeSimulation } from '@/simulation.js';
+import { z } from 'zod';
 
 export const builder = new SchemaBuilder<{
   PrismaTypes: PrismaTypes;
@@ -41,6 +42,85 @@ const SimulationInput = builder.inputType('SimulationInput', {
     energyConsumption: t.float({ required: true }),
   }),
 });
+
+const ChargerConfigSchema = z.object({
+  id: z.string(),
+  count: z.number().int().min(1),
+  power: z.number().min(0).max(1000),
+});
+
+const SimulationInputSchema = z.object({
+  name: z.string().min(1).optional(),
+  chargers: z.array(ChargerConfigSchema)
+    .min(1)
+    .refine((chargers) => {
+      const totalCount = chargers.reduce((sum, charger) => sum + charger.count, 0);
+      return totalCount <= 1000;
+    }, { message: "Total number of chargers must not exceed 1000" }),
+  arrivalProbabilities: z.array(z.number().min(0).max(100)),
+  energyConsumption: z.number().min(0.001).max(9999.999),
+})
+
+function formatValidationError(error: z.ZodError): string {
+  const messages: string[] = [];
+  
+  for (const issue of error.issues) {
+    const path = issue.path.join('.');
+    
+    switch (issue.code) {
+      case 'too_small':
+        if (path.includes('chargers') && path.includes('count')) {
+          messages.push(`Charger count must be at least ${issue.minimum}`);
+        } else if (path.includes('chargers') && path.includes('power')) {
+          messages.push(`Charger power must be at least ${issue.minimum} kW`);
+        } else if (path.includes('arrivalProbabilities')) {
+          messages.push(`Arrival probabilities must be at least ${issue.minimum}%`);
+        } else if (path.includes('energyConsumption')) {
+          messages.push(`Energy consumption must be greater than ${issue.minimum} kWh/100km`);
+        } else if (path.includes('name')) {
+          messages.push('Simulation name cannot be empty');
+        } else {
+          messages.push(`${path}: Must be at least ${issue.minimum}`);
+        }
+        break;
+        
+      case 'too_big':
+        if (path.includes('chargers') && path.includes('power')) {
+          messages.push(`Charger power must be at most ${issue.maximum} kW`);
+        } else if (path.includes('arrivalProbabilities')) {
+          messages.push(`Arrival probabilities must be at most ${issue.maximum}%`);
+        } else if (path.includes('energyConsumption')) {
+          messages.push(`Energy consumption must be less than ${issue.maximum} kWh/100km`);
+        } else {
+          messages.push(`${path}: Must be at most ${issue.maximum}`);
+        }
+        break;
+        
+      case 'invalid_type':
+        if (path.includes('chargers')) {
+          messages.push('Charger configuration is invalid');
+        } else if (path.includes('arrivalProbabilities')) {
+          messages.push('Arrival probabilities must be valid numbers');
+        } else if (path.includes('energyConsumption')) {
+          messages.push('Energy consumption must be a valid number');
+        } else {
+          messages.push(`${path}: Invalid type`);
+        }
+        break;
+        
+      case 'custom':
+        messages.push(issue.message);
+        break;
+        
+      default:
+        messages.push(issue.message);
+    }
+  }
+  
+  return messages.length > 1 
+    ? `Validation errors:\n• ${messages.join('\n• ')}`
+    : messages[0] || 'Invalid input provided';
+};
 
 builder.prismaObject('SimulationRun', {
   fields: (t) => ({
@@ -96,6 +176,12 @@ builder.mutationType({
         input: t.arg({ type: SimulationInput, required: true }),
       },
       resolve: async (query, root, args, ctx, info) => {
+        const validationResult = SimulationInputSchema.safeParse(args.input);
+        
+        if (!validationResult.success) {
+          throw new Error(formatValidationError(validationResult.error));
+        }
+
         let simulationResults: any;
         try {
           simulationResults = await executeSimulation(args.input);
